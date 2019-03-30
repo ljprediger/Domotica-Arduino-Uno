@@ -7,6 +7,9 @@
 
 //###########################################################################################################################################################
 
+//Includes
+#include <TimerOne.h>
+
 //Salidas
 #define oLamp_Escalera A0
 #define oLamp_PuertaExterior A1
@@ -48,10 +51,16 @@ int Est_oLamp_Habitacion = 0;
 int Est_oLamp_Cocina = 0;
 int Est_oLamp_Bano = 0; 
 
+int EstAnt_oLamp_Escalera = 0;
+int ApagarXtiempo_oLamp_Escalera=0;
 
-
+//Variables
 int state = 0; // Variable lectrura dato serial
- 
+int subiendoEscalera = 0; //1: indica que precione pulsador de abajo y prendo luz esc y luz puerta, y se apaga cuando cierro puerta.
+volatile unsigned long lampExteriorCont = 0; // La definimos como volatile
+
+
+//Funcion Inicializacion
 void setup() {
   //Puerto serie
     Serial.begin(9600);
@@ -99,6 +108,7 @@ void setup() {
 }
  
 void loop() {
+
 
 
  //################### Control por HC05 #######################################################
@@ -190,24 +200,42 @@ void loop() {
        
 //######################## Control por lógica ####################################################
 
-// Funcion pprender/apagar lampara de escalera con pulsadores de abajo y de arriba ingreso pulsadr derecha
-if((EstAnt_iPuls_Abajo == 0 && digitalRead(iPuls_Abajo)) || (EstAnt_iPuls_TallerDerNegro == 0 && digitalRead(iPuls_TallerDerNegro))){ //Flanco ascendente
+// Funcion prender/apagar lampara de escalera con pulsadores de abajo y de arriba ingreso pulsadr derecha
+if(EstAnt_iPuls_Abajo == 0 && digitalRead(iPuls_Abajo)){ //Flanco ascendente pulsador abajo -condicion subir escalera
           if(Est_oLamp_Escalera){
             digitalWrite(oLamp_Escalera, LOW);
             Est_oLamp_Escalera=0;
             digitalWrite(oLamp_PuertaExterior, LOW);
             Est_oLamp_PuertaExterior=0;
+            subiendoEscalera=0;
           }
           else{
             digitalWrite(oLamp_Escalera, HIGH);
             Est_oLamp_Escalera=1;
             digitalWrite(oLamp_PuertaExterior, HIGH);
             Est_oLamp_PuertaExterior=1;
+            subiendoEscalera=1;
+          }
+}
+if(EstAnt_iPuls_TallerDerNegro == 0 && digitalRead(iPuls_TallerDerNegro)){ //Flanco ascendente pulsador negro taller -condicion bajar escalera
+          if(Est_oLamp_Escalera){
+            digitalWrite(oLamp_Escalera, LOW);
+            Est_oLamp_Escalera=0;
+            digitalWrite(oLamp_PuertaExterior, LOW);
+            Est_oLamp_PuertaExterior=0;
+            subiendoEscalera=0; //no creo que haga falta
+          }
+          else{
+            digitalWrite(oLamp_Escalera, HIGH);
+            Est_oLamp_Escalera=1;
+            digitalWrite(oLamp_PuertaExterior, HIGH);
+            Est_oLamp_PuertaExterior=1;
+            subiendoEscalera=0; //no creo que haga falta
           }
 }
 
 //Situacion en la que subo la escalera de noche  al abrir la puerta prende luz taller y al cerrarla apaga luz escalera
-if(Est_oLamp_Escalera){
+if(Est_oLamp_Escalera && subiendoEscalera){
   if (EstAnt_iSns_PuertaPpal == 0 && digitalRead(iSns_PuertaPpal)){
     digitalWrite(oLamp_Taller, HIGH);
     Est_oLamp_Taller=1;
@@ -217,6 +245,7 @@ if(Est_oLamp_Escalera){
     Est_oLamp_Escalera=0;
     digitalWrite(oLamp_PuertaExterior, LOW);
     Est_oLamp_PuertaExterior=0;
+    subiendoEscalera=0;
   }
 }
 
@@ -284,7 +313,9 @@ if((EstAnt_iPuls_TallerIzqRojo == 0 && digitalRead(iPuls_TallerIzqRojo))){ //Fla
 
 
 
-
+if(EstAnt_oLamp_Escalera ==0 && Est_oLamp_Escalera){
+  ApagarXtiempo_oLamp_Escalera=1;
+}
 
 //############################### Actualizo valores de estado anterior de entradas ##########################
 EstAnt_iPuls_Abajo=digitalRead(iPuls_Abajo);
@@ -296,6 +327,8 @@ EstAnt_iLlave_Habitacion=digitalRead(iLlave_Habitacion);
 EstAnt_iLlave_Cocina=digitalRead(iLlave_Cocina);
 EstAnt_iLlave_Bano=digitalRead(iLlave_Bano);
 EstAnt_iPuls_TallerPaso=digitalRead(iPuls_TallerPaso);
+
+EstAnt_oLamp_Escalera=Est_oLamp_Escalera;
 
 delay(50);
 }
