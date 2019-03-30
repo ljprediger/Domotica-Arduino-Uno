@@ -51,13 +51,16 @@ int Est_oLamp_Habitacion = 0;
 int Est_oLamp_Cocina = 0;
 int Est_oLamp_Bano = 0; 
 
-int EstAnt_oLamp_Escalera = 0;
-int ApagarXtiempo_oLamp_Escalera=0;
+int EstAnt_oLamp_Escalera=0;
+
 
 //Variables
 int state = 0; // Variable lectrura dato serial
 int subiendoEscalera = 0; //1: indica que precione pulsador de abajo y prendo luz esc y luz puerta, y se apaga cuando cierro puerta.
 volatile unsigned long lampExteriorCont = 0; // La definimos como volatile
+
+int Lamp_ExtYpuerta = 0;
+int ApagarXtiempo_oLamp_Escalera=0;
 
 
 //Funcion Inicializacion
@@ -112,87 +115,32 @@ void loop() {
 
 
  //################### Control por HC05 #######################################################
+        state=0;
         if(Serial.available() > 0){
              state = Serial.read();
         } 
  
         switch (state){
           case 'e': //escalera 
-          if(Est_oLamp_Escalera){
-            digitalWrite(oLamp_Escalera, LOW);
-            Est_oLamp_Escalera=0;
-          }
-          else{
-            digitalWrite(oLamp_Escalera, HIGH);
-            Est_oLamp_Escalera=1;
-          }
-          state=0;
+            Est_oLamp_Escalera=!Est_oLamp_Escalera;  
             break;
           case 'a': //afueraLuz puerta 
-          if(Est_oLamp_PuertaExterior){
-            digitalWrite(oLamp_PuertaExterior, LOW);
-            Est_oLamp_PuertaExterior=0;
-          }
-          else{
-            digitalWrite(oLamp_PuertaExterior, HIGH);
-            Est_oLamp_PuertaExterior=1;
-          }
-          state=0;
+            Est_oLamp_PuertaExterior=!Est_oLamp_PuertaExterior;
             break;            
           case 'p': //parrilla
-          if(Est_oLamp_Parrilla){
-            digitalWrite(oLamp_Parrilla, LOW);
-            Est_oLamp_Parrilla=0;
-          }
-          else{
-            digitalWrite(oLamp_Parrilla, HIGH);
-            Est_oLamp_Parrilla=1;
-          }
-          state=0;
+            Est_oLamp_Parrilla=!Est_oLamp_Parrilla;        
             break;            
           case 't': //Taller
-          if(Est_oLamp_Taller){
-            digitalWrite(oLamp_Taller, LOW);
-            Est_oLamp_Taller=0;
-          }
-          else{
-            digitalWrite(oLamp_Taller, HIGH);
-            Est_oLamp_Taller=1;
-          }
-          state=0;
+            Est_oLamp_Taller=!Est_oLamp_Taller;  
             break;
           case 'h': //Habitacion
-          if(Est_oLamp_Habitacion){
-            digitalWrite(oLamp_Habitacion, LOW);
-            Est_oLamp_Habitacion=0;
-          }
-          else{
-            digitalWrite(oLamp_Habitacion, HIGH);
-            Est_oLamp_Habitacion=1;
-          }
-          state=0;
+            Est_oLamp_Habitacion=!Est_oLamp_Habitacion;
             break;
           case 'c': //Cocina 
-          if(Est_oLamp_Cocina){
-            digitalWrite(oLamp_Cocina, LOW);
-            Est_oLamp_Cocina=0;
-          }
-          else{
-            digitalWrite(oLamp_Cocina, HIGH);
-            Est_oLamp_Cocina=1;
-          }
-          state=0;
+            Est_oLamp_Cocina=!Est_oLamp_Cocina;
             break;
           case 'b': //Bano
-          if(Est_oLamp_Bano){
-            digitalWrite(oLamp_Bano, LOW);
-            Est_oLamp_Bano=0;
-          }
-          else{
-            digitalWrite(oLamp_Bano, HIGH);
-            Est_oLamp_Bano=1;
-          }
-          state=0;
+            Est_oLamp_Bano=!Est_oLamp_Bano;
             break;
           default:
             break;
@@ -203,32 +151,24 @@ void loop() {
 // Funcion prender/apagar lampara de escalera con pulsadores de abajo y de arriba ingreso pulsadr derecha
 if(EstAnt_iPuls_Abajo == 0 && digitalRead(iPuls_Abajo)){ //Flanco ascendente pulsador abajo -condicion subir escalera
           if(Est_oLamp_Escalera){
-            digitalWrite(oLamp_Escalera, LOW);
             Est_oLamp_Escalera=0;
-            digitalWrite(oLamp_PuertaExterior, LOW);
             Est_oLamp_PuertaExterior=0;
             subiendoEscalera=0;
           }
           else{
-            digitalWrite(oLamp_Escalera, HIGH);
             Est_oLamp_Escalera=1;
-            digitalWrite(oLamp_PuertaExterior, HIGH);
             Est_oLamp_PuertaExterior=1;
             subiendoEscalera=1;
           }
 }
 if(EstAnt_iPuls_TallerDerNegro == 0 && digitalRead(iPuls_TallerDerNegro)){ //Flanco ascendente pulsador negro taller -condicion bajar escalera
           if(Est_oLamp_Escalera){
-            digitalWrite(oLamp_Escalera, LOW);
             Est_oLamp_Escalera=0;
-            digitalWrite(oLamp_PuertaExterior, LOW);
             Est_oLamp_PuertaExterior=0;
             subiendoEscalera=0; //no creo que haga falta
           }
           else{
-            digitalWrite(oLamp_Escalera, HIGH);
             Est_oLamp_Escalera=1;
-            digitalWrite(oLamp_PuertaExterior, HIGH);
             Est_oLamp_PuertaExterior=1;
             subiendoEscalera=0; //no creo que haga falta
           }
@@ -237,13 +177,10 @@ if(EstAnt_iPuls_TallerDerNegro == 0 && digitalRead(iPuls_TallerDerNegro)){ //Fla
 //Situacion en la que subo la escalera de noche  al abrir la puerta prende luz taller y al cerrarla apaga luz escalera
 if(Est_oLamp_Escalera && subiendoEscalera){
   if (EstAnt_iSns_PuertaPpal == 0 && digitalRead(iSns_PuertaPpal)){
-    digitalWrite(oLamp_Taller, HIGH);
     Est_oLamp_Taller=1;
   }
   if (EstAnt_iSns_PuertaPpal && digitalRead(iSns_PuertaPpal) == 0){
-    digitalWrite(oLamp_Escalera, LOW);
     Est_oLamp_Escalera=0;
-    digitalWrite(oLamp_PuertaExterior, LOW);
     Est_oLamp_PuertaExterior=0;
     subiendoEscalera=0;
   }
@@ -253,62 +190,27 @@ if(Est_oLamp_Escalera && subiendoEscalera){
 
 // Funcion de llave taller cambia estado de lampara taller
 if((EstAnt_iLlave_Taller == 0 && digitalRead(iLlave_Taller))||(EstAnt_iLlave_Taller && digitalRead(iLlave_Taller) == 0  )|| (EstAnt_iPuls_TallerPaso == 0 && digitalRead(iPuls_TallerPaso)  )){ //Cualquier flanco
-          if(Est_oLamp_Taller){
-            digitalWrite(oLamp_Taller, LOW);
-            Est_oLamp_Taller=0;
-          }
-          else{
-            digitalWrite(oLamp_Taller, HIGH);
-            Est_oLamp_Taller=1;
-          }
+            Est_oLamp_Taller=!Est_oLamp_Taller;
 }
 
 // Funcion de llave habitacionr cambia estado de lampara habitacion
 if((EstAnt_iLlave_Habitacion == 0 && digitalRead(iLlave_Habitacion))||(EstAnt_iLlave_Habitacion && digitalRead(iLlave_Habitacion) == 0  )){ //Cualquier flanco
-          if(Est_oLamp_Habitacion){
-            digitalWrite(oLamp_Habitacion, LOW);
-            Est_oLamp_Habitacion=0;
-          }
-          else{
-            digitalWrite(oLamp_Habitacion, HIGH);
-            Est_oLamp_Habitacion=1;
-          }
+            Est_oLamp_Habitacion=!Est_oLamp_Habitacion;
 }
 
 // Funcion de llave cocina cambia estado de lampara cocina
 if((EstAnt_iLlave_Cocina == 0 && digitalRead(iLlave_Cocina))||(EstAnt_iLlave_Cocina && digitalRead(iLlave_Cocina) == 0  )){ //Cualquier flanco
-          if(Est_oLamp_Cocina){
-            digitalWrite(oLamp_Cocina, LOW);
-            Est_oLamp_Cocina=0;
-          }
-          else{
-            digitalWrite(oLamp_Cocina, HIGH);
-            Est_oLamp_Cocina=1;
-          }
+            Est_oLamp_Cocina=!Est_oLamp_Cocina;
 }
 
 // Funcion de llave bano cambia estado de lampara bano
 if((EstAnt_iLlave_Bano == 0 && digitalRead(iLlave_Bano))||(EstAnt_iLlave_Bano && digitalRead(iLlave_Bano) == 0  )){ //Cualquier flanco
-          if(Est_oLamp_Bano){
-            digitalWrite(oLamp_Bano, LOW);
-            Est_oLamp_Bano=0;
-          }
-          else{
-            digitalWrite(oLamp_Bano, HIGH);
-            Est_oLamp_Bano=1;
-          }
+            Est_oLamp_Bano=!Est_oLamp_Bano;
 }
 
 // Funcion pprender/apagar lampara parrilla con pulsadores ingreso pulsadr izq
 if((EstAnt_iPuls_TallerIzqRojo == 0 && digitalRead(iPuls_TallerIzqRojo))){ //Flanco ascendente
-          if(Est_oLamp_Parrilla){
-            digitalWrite(oLamp_Parrilla, LOW);
-            Est_oLamp_Parrilla=0;
-          }
-          else{
-            digitalWrite(oLamp_Parrilla, HIGH);
-            Est_oLamp_Parrilla=1;
-          }
+            Est_oLamp_Parrilla=!Est_oLamp_Parrilla;
 }
 
 
@@ -316,6 +218,15 @@ if((EstAnt_iPuls_TallerIzqRojo == 0 && digitalRead(iPuls_TallerIzqRojo))){ //Fla
 if(EstAnt_oLamp_Escalera ==0 && Est_oLamp_Escalera){
   ApagarXtiempo_oLamp_Escalera=1;
 }
+
+//############################### Seteo salidas ##########################
+digitalWrite(oLamp_Escalera,Est_oLamp_Escalera);
+digitalWrite(oLamp_PuertaExterior,Est_oLamp_PuertaExterior);
+digitalWrite(oLamp_Parrilla,Est_oLamp_Parrilla);
+digitalWrite(oLamp_Taller,Est_oLamp_Taller);
+digitalWrite(oLamp_Habitacion,Est_oLamp_Habitacion);
+digitalWrite(oLamp_Cocina,Est_oLamp_Cocina);
+digitalWrite(oLamp_Bano,Est_oLamp_Bano);
 
 //############################### Actualizo valores de estado anterior de entradas ##########################
 EstAnt_iPuls_Abajo=digitalRead(iPuls_Abajo);
