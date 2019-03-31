@@ -17,7 +17,7 @@
 #define oLamp_Taller A3
 #define oLamp_Habitacion A4
 #define oLamp_Cocina A5
-#define oLamp_Bano 13
+#define oLamp_Bano 12
 
 //Entradas
 #define iLlave_Taller 2
@@ -29,6 +29,14 @@
 #define iLlave_Cocina 8
 #define iLlave_Bano 9
 #define iPuls_TallerPaso 10
+
+const long maxCont_oLamp_Escalera = 480;
+const long maxCont_oLamp_PuertaExterior = 480;
+const long maxCont_oLamp_Parrilla = 50000;
+const long maxCont_oLamp_Taller = 50000;
+const long maxCont_oLamp_Habitacion = 50000;
+const long maxCont_oLamp_Cocina = 50000;
+const long maxCont_oLamp_Bano = 50000;
 
 //Estado anterior Entradas
 int EstAnt_iLlave_Taller = 0;
@@ -51,23 +59,34 @@ int Est_oLamp_Habitacion = 0;
 int Est_oLamp_Cocina = 0;
 int Est_oLamp_Bano = 0; 
 
-int EstAnt_oLamp_Escalera=0;
-
-
 //Variables
 int state = 0; // Variable lectrura dato serial
 int subiendoEscalera = 0; //1: indica que precione pulsador de abajo y prendo luz esc y luz puerta, y se apaga cuando cierro puerta.
-volatile unsigned long lampExteriorCont = 0; // La definimos como volatile
 
-int Lamp_ExtYpuerta = 0;
-int ApagarXtiempo_oLamp_Escalera=0;
+volatile unsigned long cont_oLamp_Escalera = 0;
+volatile unsigned long cont_oLamp_PuertaExterior = 0; 
+volatile unsigned long cont_oLamp_Parrilla = 0;
+volatile unsigned long cont_oLamp_Taller = 0;
+volatile unsigned long cont_oLamp_Habitacion = 0;
+volatile unsigned long cont_oLamp_Cocina = 0;
+volatile unsigned long cont_oLamp_Bano = 0;
+
+
+int Lamp_ExtYpuerta = 0; //VER
+int ApagarXtiempo_oLamp_Escalera=0; //VER
 
 
 //Funcion Inicializacion
 void setup() {
-  //Puerto serie
-    Serial.begin(9600);
 
+    //Timer 
+    Timer1.initialize(250000);
+    Timer1.attachInterrupt(controlTiempo); 
+    interrupts();
+
+    //Puerto serie
+    Serial.begin(9600);
+    
     //Configura salidas
     pinMode(oLamp_Escalera, OUTPUT);
     pinMode(oLamp_PuertaExterior, OUTPUT);
@@ -109,10 +128,41 @@ void setup() {
     EstAnt_iPuls_TallerPaso=digitalRead(iPuls_TallerPaso);
     
 }
- 
+
+//#################################################Control por tiempo##########################################
+ void controlTiempo(void)
+{
+  //Control lampara escalera
+  if(Est_oLamp_Escalera){
+    if(cont_oLamp_Escalera>maxCont_oLamp_Escalera){
+      Est_oLamp_Escalera=0;
+      subiendoEscalera=0;
+      cont_oLamp_Escalera = 0;
+    }else{
+      cont_oLamp_Escalera++;
+    }
+  }else{
+    cont_oLamp_Escalera = 0;
+}
+  //Control lampara puerta
+  if(Est_oLamp_PuertaExterior){
+    if(cont_oLamp_PuertaExterior>maxCont_oLamp_PuertaExterior){
+      Est_oLamp_PuertaExterior=0;
+      cont_oLamp_PuertaExterior = 0;
+    }else{
+      cont_oLamp_PuertaExterior++;
+    }
+  }else{
+    cont_oLamp_PuertaExterior = 0;
+}
+
+}
+
+
+
 void loop() {
 
-
+ 
 
  //################### Control por HC05 #######################################################
         state=0;
@@ -215,10 +265,6 @@ if((EstAnt_iPuls_TallerIzqRojo == 0 && digitalRead(iPuls_TallerIzqRojo))){ //Fla
 
 
 
-if(EstAnt_oLamp_Escalera ==0 && Est_oLamp_Escalera){
-  ApagarXtiempo_oLamp_Escalera=1;
-}
-
 //############################### Seteo salidas ##########################
 digitalWrite(oLamp_Escalera,Est_oLamp_Escalera);
 digitalWrite(oLamp_PuertaExterior,Est_oLamp_PuertaExterior);
@@ -238,8 +284,6 @@ EstAnt_iLlave_Habitacion=digitalRead(iLlave_Habitacion);
 EstAnt_iLlave_Cocina=digitalRead(iLlave_Cocina);
 EstAnt_iLlave_Bano=digitalRead(iLlave_Bano);
 EstAnt_iPuls_TallerPaso=digitalRead(iPuls_TallerPaso);
-
-EstAnt_oLamp_Escalera=Est_oLamp_Escalera;
 
 delay(50);
 }
