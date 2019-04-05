@@ -37,6 +37,18 @@ const long maxCont_oLamp_Taller = 50000;
 const long maxCont_oLamp_Habitacion = 50000;
 const long maxCont_oLamp_Cocina = 50000;
 const long maxCont_oLamp_Bano = 50000;
+const long maxCont_iFiltro = 10;
+
+//Estado anterior Entradas
+int Est_iLlave_Taller = 0;
+int Est_iPuls_TallerDerNegro = 0;
+int Est_iPuls_TallerIzqRojo = 0;
+int Est_iPuls_Abajo = 0;
+int Est_iSns_PuertaPpal = 0;
+int Est_iLlave_Habitacion = 0;
+int Est_iLlave_Cocina = 0;
+int Est_iLlave_Bano = 0;
+int Est_iPuls_TallerPaso = 0;
 
 //Estado anterior Entradas
 int EstAnt_iLlave_Taller = 0;
@@ -63,6 +75,16 @@ int Est_oLamp_Bano = 0;
 int state = 0; // Variable lectrura dato serial
 int subiendoEscalera = 0; //1: indica que precione pulsador de abajo y prendo luz esc y luz puerta, y se apaga cuando cierro puerta.
 
+volatile unsigned long cont_iLlave_Taller = 0;
+volatile unsigned long cont_iPuls_TallerDerNegro = 0; 
+volatile unsigned long cont_iPuls_TallerIzqRojo = 0;
+volatile unsigned long cont_iPuls_Abajo = 0;
+volatile unsigned long cont_iSns_PuertaPpal = 0;
+volatile unsigned long cont_iLlave_Habitacion = 0;
+volatile unsigned long cont_iLlave_Cocina = 0;
+volatile unsigned long cont_iLlave_Bano = 0;
+volatile unsigned long cont_iPuls_TallerPaso = 0;
+
 volatile unsigned long cont_oLamp_Escalera = 0;
 volatile unsigned long cont_oLamp_PuertaExterior = 0; 
 volatile unsigned long cont_oLamp_Parrilla = 0;
@@ -74,13 +96,14 @@ volatile unsigned long cont_oLamp_Bano = 0;
 
 int Lamp_ExtYpuerta = 0; //VER
 int ApagarXtiempo_oLamp_Escalera=0; //VER
+int AuxLecturaEntrada=0;
 
 
 //Funcion Inicializacion
 void setup() {
 
     //Timer 
-    Timer1.initialize(250000);
+    Timer1.initialize(2500000);
     Timer1.attachInterrupt(controlTiempo); 
     interrupts();
 
@@ -117,15 +140,25 @@ void setup() {
     pinMode(iPuls_TallerPaso, INPUT_PULLUP);
 
     //Actualiza valores de entradas
-    EstAnt_iLlave_Taller=digitalRead(iLlave_Taller);
-    EstAnt_iPuls_TallerDerNegro=digitalRead(iPuls_TallerDerNegro);
-    EstAnt_iPuls_TallerIzqRojo=digitalRead(iPuls_TallerIzqRojo);
-    EstAnt_iPuls_Abajo=digitalRead(iPuls_Abajo);
-    EstAnt_iSns_PuertaPpal=digitalRead(iSns_PuertaPpal);
-    EstAnt_iLlave_Habitacion=digitalRead(iLlave_Habitacion);
-    EstAnt_iLlave_Cocina=digitalRead(iLlave_Cocina);
-    EstAnt_iLlave_Bano=digitalRead(iLlave_Bano);
-    EstAnt_iPuls_TallerPaso=digitalRead(iPuls_TallerPaso);
+    Est_iLlave_Taller=digitalRead(iLlave_Taller);
+    Est_iPuls_TallerDerNegro=digitalRead(iPuls_TallerDerNegro);
+    Est_iPuls_TallerIzqRojo=digitalRead(iPuls_TallerIzqRojo);
+    Est_iPuls_Abajo=digitalRead(iPuls_Abajo);
+    Est_iSns_PuertaPpal=digitalRead(iSns_PuertaPpal);
+    Est_iLlave_Habitacion=digitalRead(iLlave_Habitacion);
+    Est_iLlave_Cocina=digitalRead(iLlave_Cocina);
+    Est_iLlave_Bano=digitalRead(iLlave_Bano);
+    Est_iPuls_TallerPaso=digitalRead(iPuls_TallerPaso);
+
+    EstAnt_iLlave_Taller=Est_iLlave_Taller;
+    EstAnt_iPuls_TallerDerNegro=Est_iPuls_TallerDerNegro;
+    EstAnt_iPuls_TallerIzqRojo=Est_iPuls_TallerIzqRojo;
+    EstAnt_iPuls_Abajo=Est_iPuls_Abajo;
+    EstAnt_iSns_PuertaPpal=Est_iPuls_Abajo;
+    EstAnt_iLlave_Habitacion=Est_iLlave_Habitacion;
+    EstAnt_iLlave_Cocina=Est_iLlave_Cocina;
+    EstAnt_iLlave_Bano=Est_iLlave_Bano;
+    EstAnt_iPuls_TallerPaso=Est_iPuls_TallerPaso;
     
 }
 
@@ -156,6 +189,7 @@ void setup() {
     cont_oLamp_PuertaExterior = 0;
 }
 
+
 }
 
 
@@ -163,6 +197,118 @@ void setup() {
 void loop() {
 
  
+
+//############################### Filtro Entradas ##########################
+AuxLecturaEntrada=digitalRead(iLlave_Taller);
+if ((Est_iLlave_Taller && AuxLecturaEntrada == 0) || (Est_iLlave_Taller == 0 && AuxLecturaEntrada)){
+  if (cont_iLlave_Taller>maxCont_iFiltro){
+    Est_iLlave_Taller=AuxLecturaEntrada;
+    cont_iLlave_Taller=0;
+  }else{
+    cont_iLlave_Taller++;
+  }
+}else{
+  cont_iLlave_Taller=0;
+}
+
+AuxLecturaEntrada=digitalRead(iPuls_TallerDerNegro);
+if ((Est_iPuls_TallerDerNegro && AuxLecturaEntrada == 0) || (Est_iPuls_TallerDerNegro == 0 && AuxLecturaEntrada)){
+  if (cont_iPuls_TallerDerNegro>maxCont_iFiltro){
+    Est_iPuls_TallerDerNegro=AuxLecturaEntrada;
+    cont_iPuls_TallerDerNegro=0;
+  }else{
+    cont_iPuls_TallerDerNegro++;
+  }
+}else{
+  cont_iPuls_TallerDerNegro=0;
+}
+
+AuxLecturaEntrada=digitalRead(iPuls_TallerIzqRojo);
+if ((Est_iPuls_TallerIzqRojo && AuxLecturaEntrada == 0) || (Est_iPuls_TallerIzqRojo == 0 && AuxLecturaEntrada)){
+  if (cont_iPuls_TallerIzqRojo>maxCont_iFiltro){
+    Est_iPuls_TallerIzqRojo=AuxLecturaEntrada;
+    cont_iPuls_TallerIzqRojo=0;
+  }else{
+    cont_iPuls_TallerIzqRojo++;
+  }
+}else{
+  cont_iPuls_TallerIzqRojo=0;
+}
+
+AuxLecturaEntrada=digitalRead(iPuls_Abajo);
+if ((Est_iPuls_Abajo && AuxLecturaEntrada == 0) || (Est_iPuls_Abajo == 0 && AuxLecturaEntrada)){
+  if (cont_iPuls_Abajo>maxCont_iFiltro){
+    Est_iPuls_Abajo=AuxLecturaEntrada;
+    cont_iPuls_Abajo=0;
+  }else{
+    cont_iPuls_Abajo++;
+  }
+}else{
+  cont_iPuls_Abajo=0;
+}
+
+AuxLecturaEntrada=digitalRead(iSns_PuertaPpal);
+if ((Est_iSns_PuertaPpal && AuxLecturaEntrada == 0) || (Est_iSns_PuertaPpal == 0 && AuxLecturaEntrada)){
+  if (cont_iSns_PuertaPpal>maxCont_iFiltro){
+    Est_iSns_PuertaPpal=AuxLecturaEntrada;
+    cont_iSns_PuertaPpal=0;
+  }else{
+    cont_iSns_PuertaPpal++;
+  }
+}else{
+  cont_iSns_PuertaPpal=0;
+}
+
+AuxLecturaEntrada=digitalRead(iLlave_Habitacion);
+if ((Est_iLlave_Habitacion && AuxLecturaEntrada == 0) || (Est_iLlave_Habitacion == 0 && AuxLecturaEntrada)){
+  if (cont_iLlave_Habitacion>maxCont_iFiltro){
+    Est_iLlave_Habitacion=AuxLecturaEntrada;
+    cont_iLlave_Habitacion=0;
+  }else{
+    cont_iLlave_Habitacion++;
+  }
+}else{
+  cont_iLlave_Habitacion=0;
+}
+
+AuxLecturaEntrada=digitalRead(iLlave_Cocina);
+if ((Est_iLlave_Cocina && AuxLecturaEntrada == 0) || (Est_iLlave_Cocina == 0 && AuxLecturaEntrada)){
+  if (cont_iLlave_Cocina>maxCont_iFiltro){
+    Est_iLlave_Cocina=AuxLecturaEntrada;
+    cont_iLlave_Cocina=0;
+  }else{
+    cont_iLlave_Cocina++;
+  }
+}else{
+  cont_iLlave_Cocina=0;
+}
+
+AuxLecturaEntrada=digitalRead(iLlave_Bano);
+if ((Est_iLlave_Bano && AuxLecturaEntrada == 0) || (Est_iLlave_Bano == 0 && AuxLecturaEntrada)){
+  if (cont_iLlave_Bano>maxCont_iFiltro){
+    Est_iLlave_Bano=AuxLecturaEntrada;
+    cont_iLlave_Bano=0;
+  }else{
+    cont_iLlave_Bano++;
+  }
+}else{
+  cont_iLlave_Bano=0;
+}
+
+AuxLecturaEntrada=digitalRead(iPuls_TallerPaso);
+if ((Est_iPuls_TallerPaso && AuxLecturaEntrada == 0) || (Est_iPuls_TallerPaso == 0 && AuxLecturaEntrada)){
+  if (cont_iPuls_TallerPaso>maxCont_iFiltro){
+    Est_iPuls_TallerPaso=AuxLecturaEntrada;
+    cont_iPuls_TallerPaso=0;
+  }else{
+    cont_iPuls_TallerPaso++;
+  }
+}else{
+  cont_iPuls_TallerPaso=0;
+}
+
+
+
 
  //################### Control por HC05 #######################################################
         state=0;
@@ -199,7 +345,7 @@ void loop() {
 //######################## Control por lógica ####################################################
 
 // Funcion prender/apagar lampara de escalera con pulsadores de abajo y de arriba ingreso pulsadr derecha
-if(EstAnt_iPuls_Abajo == 0 && digitalRead(iPuls_Abajo)){ //Flanco ascendente pulsador abajo -condicion subir escalera
+if(EstAnt_iPuls_Abajo == 0 && Est_iPuls_Abajo){ //Flanco ascendente pulsador abajo -condicion subir escalera
           if(Est_oLamp_Escalera){
             Est_oLamp_Escalera=0;
             Est_oLamp_PuertaExterior=0;
@@ -211,7 +357,7 @@ if(EstAnt_iPuls_Abajo == 0 && digitalRead(iPuls_Abajo)){ //Flanco ascendente pul
             subiendoEscalera=1;
           }
 }
-if(EstAnt_iPuls_TallerDerNegro == 0 && digitalRead(iPuls_TallerDerNegro)){ //Flanco ascendente pulsador negro taller -condicion bajar escalera
+if(EstAnt_iPuls_TallerDerNegro == 0 && Est_iPuls_TallerDerNegro){ //Flanco ascendente pulsador negro taller -condicion bajar escalera
           if(Est_oLamp_Escalera){
             Est_oLamp_Escalera=0;
             Est_oLamp_PuertaExterior=0;
@@ -226,10 +372,10 @@ if(EstAnt_iPuls_TallerDerNegro == 0 && digitalRead(iPuls_TallerDerNegro)){ //Fla
 
 //Situacion en la que subo la escalera de noche  al abrir la puerta prende luz taller y al cerrarla apaga luz escalera
 if(Est_oLamp_Escalera && subiendoEscalera){
-  if (EstAnt_iSns_PuertaPpal == 0 && digitalRead(iSns_PuertaPpal)){
+  if (EstAnt_iSns_PuertaPpal == 0 && Est_iSns_PuertaPpal){
     Est_oLamp_Taller=1;
   }
-  if (EstAnt_iSns_PuertaPpal && digitalRead(iSns_PuertaPpal) == 0){
+  if (EstAnt_iSns_PuertaPpal && Est_iSns_PuertaPpal == 0){
     Est_oLamp_Escalera=0;
     Est_oLamp_PuertaExterior=0;
     subiendoEscalera=0;
@@ -239,30 +385,40 @@ if(Est_oLamp_Escalera && subiendoEscalera){
 
 
 // Funcion de llave taller cambia estado de lampara taller
-if((EstAnt_iLlave_Taller == 0 && digitalRead(iLlave_Taller))||(EstAnt_iLlave_Taller && digitalRead(iLlave_Taller) == 0  )|| (EstAnt_iPuls_TallerPaso == 0 && digitalRead(iPuls_TallerPaso)  )){ //Cualquier flanco
+if((EstAnt_iLlave_Taller == 0 && Est_iLlave_Taller)||(EstAnt_iLlave_Taller && Est_iLlave_Taller == 0  )|| (EstAnt_iPuls_TallerPaso == 0 && Est_iPuls_TallerPaso  )){ //Cualquier flanco
             Est_oLamp_Taller=!Est_oLamp_Taller;
 }
 
 // Funcion de llave habitacionr cambia estado de lampara habitacion
-if((EstAnt_iLlave_Habitacion == 0 && digitalRead(iLlave_Habitacion))||(EstAnt_iLlave_Habitacion && digitalRead(iLlave_Habitacion) == 0  )){ //Cualquier flanco
+if((EstAnt_iLlave_Habitacion == 0 && Est_iLlave_Habitacion)||(EstAnt_iLlave_Habitacion && Est_iLlave_Habitacion == 0  )){ //Cualquier flanco
             Est_oLamp_Habitacion=!Est_oLamp_Habitacion;
 }
 
 // Funcion de llave cocina cambia estado de lampara cocina
-if((EstAnt_iLlave_Cocina == 0 && digitalRead(iLlave_Cocina))||(EstAnt_iLlave_Cocina && digitalRead(iLlave_Cocina) == 0  )){ //Cualquier flanco
+if((EstAnt_iLlave_Cocina == 0 && Est_iLlave_Cocina)||(EstAnt_iLlave_Cocina && Est_iLlave_Cocina == 0  )){ //Cualquier flanco
             Est_oLamp_Cocina=!Est_oLamp_Cocina;
 }
 
 // Funcion de llave bano cambia estado de lampara bano
-if((EstAnt_iLlave_Bano == 0 && digitalRead(iLlave_Bano))||(EstAnt_iLlave_Bano && digitalRead(iLlave_Bano) == 0  )){ //Cualquier flanco
+if((EstAnt_iLlave_Bano == 0 && Est_iLlave_Bano)||(EstAnt_iLlave_Bano && Est_iLlave_Bano == 0  )){ //Cualquier flanco
             Est_oLamp_Bano=!Est_oLamp_Bano;
 }
 
 // Funcion pprender/apagar lampara parrilla con pulsadores ingreso pulsadr izq
-if((EstAnt_iPuls_TallerIzqRojo == 0 && digitalRead(iPuls_TallerIzqRojo))){ //Flanco ascendente
+if((EstAnt_iPuls_TallerIzqRojo == 0 && Est_iPuls_TallerIzqRojo)){ //Flanco ascendente
             Est_oLamp_Parrilla=!Est_oLamp_Parrilla;
 }
 
+
+EstAnt_iLlave_Taller=Est_iLlave_Taller;
+EstAnt_iPuls_TallerDerNegro=Est_iPuls_TallerDerNegro;
+EstAnt_iPuls_TallerIzqRojo=Est_iPuls_TallerIzqRojo;
+EstAnt_iPuls_Abajo=Est_iPuls_Abajo;
+EstAnt_iSns_PuertaPpal=Est_iSns_PuertaPpal;
+EstAnt_iLlave_Habitacion=Est_iLlave_Habitacion;
+EstAnt_iLlave_Cocina=Est_iLlave_Cocina;
+EstAnt_iLlave_Bano=Est_iLlave_Bano;
+EstAnt_iPuls_TallerPaso=Est_iPuls_TallerPaso;
 
 
 //############################### Seteo salidas ##########################
@@ -274,18 +430,9 @@ digitalWrite(oLamp_Habitacion,Est_oLamp_Habitacion);
 digitalWrite(oLamp_Cocina,Est_oLamp_Cocina);
 digitalWrite(oLamp_Bano,Est_oLamp_Bano);
 
-//############################### Actualizo valores de estado anterior de entradas ##########################
-EstAnt_iPuls_Abajo=digitalRead(iPuls_Abajo);
-EstAnt_iPuls_TallerDerNegro=digitalRead(iPuls_TallerDerNegro);
-EstAnt_iPuls_TallerIzqRojo=digitalRead(iPuls_TallerIzqRojo);
-EstAnt_iLlave_Taller=digitalRead(iLlave_Taller);
-EstAnt_iSns_PuertaPpal=digitalRead(iSns_PuertaPpal);
-EstAnt_iLlave_Habitacion=digitalRead(iLlave_Habitacion);
-EstAnt_iLlave_Cocina=digitalRead(iLlave_Cocina);
-EstAnt_iLlave_Bano=digitalRead(iLlave_Bano);
-EstAnt_iPuls_TallerPaso=digitalRead(iPuls_TallerPaso);
 
-delay(50);
+
+delay(5);
 }
 
 
